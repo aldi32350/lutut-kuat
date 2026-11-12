@@ -1,0 +1,17 @@
+{
+  "name": "Lutut Kuat – Latihan Lutut di Rumah",
+  "short_name": "Lutut Kuat",
+  "description": "Latihan lutut ringan di rumah dengan panduan gambar, suara, dan hitungan.",
+  "lang": "id",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f4ee",
+  "theme_color": "#0f766e",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

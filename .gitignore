@@ -1,0 +1,13 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+# RAHASIA lisensi & alat penjual — hanya disimpan di komputer sendiri
+lutut-kuat/js/secret.js
+pembuat-kode-aktivasi.html
+# Jangan pernah menyimpan kunci SSH atau file rahasia
+*.pem
+*.key
+id_*
+.env
