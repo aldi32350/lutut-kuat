@@ -11,3 +11,8 @@ pembuat-kode-aktivasi.html
 *.key
 id_*
 .env
+
+# Hasil render video (bisa dibuat ulang)
+video/*.mp4
+video/assets/musik.wav
+video/assets/preview.jpg

@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Lutut Kuat – Video Cerita</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=block" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: #000; }
+  body { font-family: "Nunito", "Segoe UI", sans-serif; color: #fff; -webkit-font-smoothing: antialiased; }
+  #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; }
+  .scene { position: absolute; inset: 0; opacity: 0; }
+  .bg { position: absolute; inset: -40px; }
+  .vignette { position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 90% 75% at 50% 45%, transparent 60%, rgba(0,0,0,.22) 100%); }
+
+  .tx { position: absolute; left: 90px; right: 90px; text-align: center; opacity: 0;
+    font-weight: 900; font-size: 78px; line-height: 1.18; letter-spacing: -0.5px; }
+  .tx.md { font-size: 62px; font-weight: 800; }
+  .tx.sm { font-size: 46px; font-weight: 700; line-height: 1.35; }
+  .tx.dark { color: #1b2a29; }
+  .shadow { text-shadow: 0 4px 18px rgba(0,0,0,.35); }
+  .em { color: #ffd38a; }
+  .em2 { color: #0f766e; }
+
+  .fig-wrap { position: absolute; }
+  .fig-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .fig-body, .fig-far { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-width: 8; }
+  .fig-arm { stroke-width: 7; }
+  .fig-prop { fill: none; stroke: #8a7a64; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+  .fig-floor { display: none; }
+  .fig-mat { display: none; }
+  .fig-hl { fill: #e03b2f; opacity: 0; }
+
+  .icons { position: absolute; left: 0; right: 0; display: flex; justify-content: center; gap: 70px; }
+  .icon { font-size: 150px; opacity: 0; filter: drop-shadow(0 10px 20px rgba(0,0,0,.25)); }
+
+  .bubble { position: absolute; left: 110px; right: 110px; top: 640px; opacity: 0;
+    background: #fff; color: #1b2a29; border-radius: 48px; padding: 70px 60px; text-align: center;
+    font-size: 82px; font-weight: 900; line-height: 1.15; box-shadow: 0 30px 80px rgba(0,0,0,.4); }
+  .bubble::after { content: ""; position: absolute; left: 160px; bottom: -60px; border: 34px solid transparent; border-top: 40px solid #fff; border-left-width: 10px; }
+
+  .opt { position: absolute; left: 110px; right: 110px; opacity: 0; display: flex; align-items: center; gap: 36px;
+    background: rgba(255,255,255,.1); border: 3px solid rgba(255,255,255,.25); border-radius: 40px; padding: 44px 48px; }
+  .opt .oi { font-size: 110px; }
+  .opt .ot { font-size: 56px; font-weight: 800; line-height: 1.2; flex: 1; }
+  .opt .ot small { display: block; font-size: 44px; font-weight: 700; color: #ffb4ab; }
+  .opt .x { font-size: 110px; font-weight: 900; color: #ff6b5e; opacity: 0; }
+
+  .logo { position: absolute; left: 50%; display: flex; align-items: center; gap: 30px; opacity: 0; transform: translateX(-50%); white-space: nowrap; }
+  .logo img { width: 130px; height: 130px; border-radius: 34px; box-shadow: 0 10px 30px rgba(0,0,0,.2); }
+  .logo span { font-size: 96px; font-weight: 900; color: #0f766e; letter-spacing: -1px; }
+
+  .phone { position: absolute; left: 50%; width: 560px; height: 1180px; margin-left: -280px; opacity: 0;
+    border-radius: 80px; background: #111; padding: 22px; box-shadow: 0 50px 120px rgba(8,40,37,.45); }
+  .phone .screen { position: relative; width: 100%; height: 100%; border-radius: 60px; overflow: hidden; background: #f6f4ee; }
+  .phone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  .phone .notch { position: absolute; top: 22px; left: 50%; width: 170px; height: 44px; margin-left: -85px; background: #111; border-radius: 0 0 26px 26px; z-index: 2; }
+
+  .chip { position: absolute; opacity: 0; background: #fff; color: #1b2a29; border-radius: 999px;
+    padding: 26px 44px; font-size: 44px; font-weight: 800; box-shadow: 0 16px 40px rgba(8,40,37,.25); white-space: nowrap; }
+  .chip b { color: #0f766e; }
+
+  .cta-big { position: absolute; left: 80px; right: 80px; top: 820px; text-align: center; opacity: 0;
+    font-size: 104px; font-weight: 900; line-height: 1.05; color: #1b2a29; }
+  .cta-big .free { color: #ea580c; }
+  .url { position: absolute; left: 50%; top: 1150px; opacity: 0; transform: translateX(-50%);
+    background: #0f766e; color: #fff; border-radius: 999px; padding: 34px 70px; font-size: 64px; font-weight: 900; white-space: nowrap;
+    box-shadow: 0 20px 50px rgba(15,118,110,.4); }
+  .disc { position: absolute; left: 90px; right: 90px; bottom: 120px; text-align: center; font-size: 34px; font-weight: 700; color: #5a6866; opacity: 0; }
+  .sun { position: absolute; width: 360px; height: 360px; border-radius: 50%;
+    background: radial-gradient(circle, #fff6d6 0%, #ffd27a 45%, rgba(255,190,90,0) 70%); }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- S1: Pagi -->
+  <section class="scene" id="s1">
+    <div class="bg" style="background: linear-gradient(#f7b787 0%, #f9d29d 45%, #fbe8c8 100%);"></div>
+    <div class="sun" id="sun"></div>
+    <svg style="position:absolute;left:0;bottom:0;width:1080px;height:520px" viewBox="0 0 1080 520">
+      <path d="M0 260 L120 200 L240 260 L240 520 L0 520Z" fill="#e8b98c"/>
+      <path d="M760 230 L900 150 L1040 230 L1040 520 L760 520Z" fill="#e3ad7d"/>
+      <rect x="0" y="420" width="1080" height="100" fill="#d99a6c"/>
+    </svg>
+    <div class="fig-wrap" id="f1" style="left:110px; top:700px; width:820px"></div>
+    <div class="tx dark" data-at="0.4" style="top:260px">Dulu, Ibu selalu jadi<br>orang <span class="em2">pertama</span> yang bangun.</div>
+    <div class="vignette"></div>
+  </section>
+
+  <!-- S2: Rutinitas -->
+  <section class="scene" id="s2">
+    <div class="bg" style="background: linear-gradient(#fbe8c8, #f6d6a8);"></div>
+    <div class="tx dark md" data-at="5.4" style="top:330px">Ke pasar.</div>
+    <div class="tx dark md" data-at="6.5" style="top:430px">Naik-turun tangga.</div>
+    <div class="tx dark md" data-at="7.6" style="top:530px">Menggendong cucu.</div>
+    <div class="icons" style="top:820px">
+      <div class="icon" data-at="5.6">🧺</div><div class="icon" data-at="6.7">🪜</div><div class="icon" data-at="7.8">👶</div>
+    </div>
+    <div class="tx dark" data-at="8.7" style="top:1240px">Tanpa pernah<br><span class="em2">mengeluh.</span></div>
+    <div class="vignette"></div>
+  </section>
+
+  <!-- S3: Tangga -->
+  <section class="scene" id="s3">
+    <div class="bg" style="background: linear-gradient(#e9e2d4, #d9cfbd);"></div>
+    <div class="tx dark md" data-at="10.9" style="top:220px">Tapi belakangan…</div>
+    <div class="tx dark" data-at="12.1" style="top:340px">Ibu sering berhenti<br>di anak tangga <span style="color:#c2410c">ketiga.</span></div>
+    <div class="fig-wrap" id="f3" style="left:-40px; top:640px; width:1160px"></div>
+    <div class="vignette"></div>
+  </section>
+
+  <!-- S4: "cuma lutut" -->
+  <section class="scene" id="s4">
+    <div class="bg" style="background: radial-gradient(ellipse at 50% 40%, #2c3e50, #141e2a);"></div>
+    <div class="bubble" data-at="16.9">“Nggak apa-apa…<br>cuma lutut.”</div>
+    <div class="tx sm shadow" data-at="18.4" style="top:1180px; color:#e6edf3">katanya, sambil tersenyum.</div>
+    <div class="vignette"></div>
+  </section>
+
+  <!-- S5: bukan cuma -->
+  <section class="scene" id="s5">
+    <div class="bg" style="background: radial-gradient(ellipse at 50% 40%, #233446, #0f1822);"></div>
+    <div class="tx shadow" data-at="21.3" style="top:560px">Kami tahu,<br>itu bukan <span class="em">“cuma”.</span></div>
+    <div class="tx sm shadow" data-at="22.9" style="top:950px; color:#cfd9e2">Seiring usia, otot penopang lutut<br>bisa melemah bila jarang dilatih.</div>
+    <div class="vignette"></div>
+  </section>
+
+  <!-- S6: pilihan sulit -->
+  <section class="scene" id="s6">
+    <div class="bg" style="background: linear-gradient(#1f2f3d, #2d4152);"></div>
+    <div class="tx md shadow" data-at="25.3" style="top:330px">Kami sempat bingung…</div>
+    <div class="opt" data-at="25.8" style="top:620px"><div class="oi">🏋️</div><div class="ot">Ke gym?<small>Ibu sungkan.</small></div><div class="x" data-at="26.6">✕</div></div>
+    <div class="opt" data-at="27.0" style="top:940px"><div class="oi">🏥</div><div class="ot">Terapi tiap minggu?<small>Jauh & mahal.</small></div><div class="x" data-at="27.8">✕</div></div>
+    <div class="vignette"></div>
+  </section>
+
+  <!-- S7: cara sederhana -->
+  <section class="scene" id="s7">
+    <div class="bg" style="background: linear-gradient(#dff3ef, #f6f4ee);"></div>
+    <div class="tx dark" data-at="29.8" style="top:260px">Kami butuh cara<br>yang <span class="em2">sederhana.</span></div>
+    <div class="tx dark sm" data-at="31.0" style="top:560px">Di rumah. Sambil duduk di kursi.</div>
+    <div class="fig-wrap" id="f7" style="left:190px; top:780px; width:700px"></div>
+  </section>
+
+  <!-- S8: Reveal produk -->
+  <section class="scene" id="s8">
+    <div class="bg" style="background: radial-gradient(ellipse at 50% 35%, #ffffff, #dff3ef 70%);"></div>
+    <div class="logo" data-at="33.2" style="top:150px"><img src="../lutut-kuat/icons/icon-512.png" alt=""><span>Lutut Kuat</span></div>
+    <div class="phone" id="phone" data-at="33.8" style="top:380px">
+      <div class="screen"><div class="notch"></div>
+        <img id="ph1" src="assets/app-player.png" alt="">
+        <img id="ph2" src="assets/app-home.png" alt="" style="opacity:0">
+      </div>
+    </div>
+    <div class="chip" data-at="35.0" style="left:60px; top:520px">🧘 Gerakan <b>dipandu gambar</b></div>
+    <div class="chip" data-at="36.2" style="right:60px; top:900px">🔊 Suara & hitungan <b>B. Indonesia</b></div>
+    <div class="chip" data-at="37.4" style="left:80px; top:1300px">⏱ Cukup <b>±10 menit</b> sehari</div>
+  </section>
+
+  <!-- S9: kebersamaan -->
+  <section class="scene" id="s9">
+    <div class="bg" style="background: linear-gradient(#fde9c9, #fbd9a8);"></div>
+    <div class="tx dark md" data-at="40.8" style="top:240px">Kini latihan pagi jadi<br><span class="em2">waktu bersama.</span></div>
+    <div class="fig-wrap" id="f9a" style="left:40px; top:640px; width:600px"></div>
+    <div class="fig-wrap" id="f9b" style="left:560px; top:820px; width:450px"></div>
+    <div class="tx dark sm" data-at="42.6" style="top:1460px">Karena orang tua kita layak<br>terus melangkah dengan nyaman.</div>
+  </section>
+
+  <!-- S10: CTA -->
+  <section class="scene" id="s10">
+    <div class="bg" style="background: radial-gradient(ellipse at 50% 30%, #ffffff, #f6f4ee 70%);"></div>
+    <div class="logo" data-at="45.8" style="top:420px"><img src="../lutut-kuat/icons/icon-512.png" alt=""><span>Lutut Kuat</span></div>
+    <div class="cta-big" data-at="46.4">Coba <span class="free">GRATIS</span><br>3 hari</div>
+    <div class="url" data-at="47.2">lututkuat.web.id</div>
+    <div class="tx dark sm" data-at="47.8" style="top:1360px; font-size:42px; color:#3f4d4b">Langsung dari HP • Panduan suara<br>Untuk Ayah & Ibu di rumah</div>
+    <div class="disc" data-at="46.4">Ilustrasi cerita. Latihan ringan, bukan pengganti saran dokter.</div>
+  </section>
+</div>
+
+<script src="../lutut-kuat/js/data.js"></script>
+<script src="../lutut-kuat/js/figure.js"></script>
+<script>
+const { Figure, repProgress } = LK_FIG;
+const EX = Object.fromEntries(LK_DATA.EXERCISES.map(e => [e.id, e]));
+const DURATION = 50;
+const SCENES = [
+  ["s1", 0, 5.0], ["s2", 5.0, 10.5], ["s3", 10.5, 16.6], ["s4", 16.6, 21.0], ["s5", 21.0, 25.0],
+  ["s6", 25.0, 29.5], ["s7", 29.5, 33.0], ["s8", 33.0, 40.5], ["s9", 40.5, 45.5], ["s10", 45.5, 50.0],
+];
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const ease = t => t * t * (3 - 2 * t);
+const easeOut = t => 1 - Math.pow(1 - t, 3);
+const NS = "http://www.w3.org/2000/svg";
+
+// ---------- Karakter ----------
+function dress(fig, c) {
+  const root = fig.svg.firstChild;
+  fig.torso.style.stroke = c.top; fig.arm.style.stroke = c.top;
+  fig.nearLeg.style.stroke = c.legs; fig.farLeg.style.stroke = c.legsFar;
+  fig.head.style.fill = c.hair;
+  const drape = document.createElementNS(NS, "path");
+  drape.setAttribute("fill", c.hair);
+  root.insertBefore(drape, fig.head);
+  const face = document.createElementNS(NS, "circle");
+  face.setAttribute("r", c.faceR); face.setAttribute("fill", c.skin);
+  root.insertBefore(face, fig.nearLeg);
+  const orig = fig.render.bind(fig);
+  fig.render = (pose) => {
+    orig(pose);
+    const hx = +fig.head.getAttribute("cx"), hy = +fig.head.getAttribute("cy");
+    const m = fig.torso.getAttribute("d").match(/L([\d.-]+) ([\d.-]+)/);
+    const sx = +m[1], sy = +m[2];
+    const dx = hx - sx, dy = hy - sy, len = Math.hypot(dx, dy) || 1;
+    face.setAttribute("cx", (hx + 2.6).toFixed(1));
+    face.setAttribute("cy", (hy + 1.4).toFixed(1));
+    if (c.hijab) {
+      // kerudung menjuntai dari kepala ke bahu
+      const px = -dy / len, py = dx / len;
+      const w = 12;
+      drape.setAttribute("d", `M${hx + px * w} ${hy + py * w} L${sx + px * w + dx / len * -6} ${sy + py * w + 6} L${sx - px * w + dx / len * -6} ${sy - py * w + 6} L${hx - px * w} ${hy - py * w}Z`);
+    } else drape.setAttribute("d", "");
+  };
+}
+const IBU = { top: "#2a7a70", legs: "#3e4a66", legsFar: "#6f7a96", hair: "#d68a8f", skin: "#e7b991", faceR: 7.6, hijab: true };
+const CUCU = { top: "#f2a541", legs: "#4a6fa5", legsFar: "#86a0c8", hair: "#3a2a20", skin: "#f0c49b", faceR: 8, hijab: false };
+
+function makeFig(id, ex, colors, mirror, viewBox) {
+  const f = new Figure(document.getElementById(id));
+  f.setExercise(ex, mirror);
+  if (viewBox) f.svg.setAttribute("viewBox", viewBox);
+  dress(f, colors);
+  return f;
+}
+
+// S1: berjalan
+const STAND = { hip: [95, 86], torso: 3, n: [0, 0, 90], f: [0, 0, 90], arm: [5, 10] };
+const WALK = { frames: [
+  { ...STAND, n: [22, 4, 86], f: [-18, -28, 118], arm: [-16, -6] },
+  { ...STAND, n: [-18, -28, 118], f: [22, 4, 86], arm: [16, 38] } ], props: [], highlight: "knee" };
+const f1 = makeFig("f1", WALK, IBU, false, "0 -10 200 182");
+
+// S3: naik tangga
+const STAIRS = { frames: [STAND], props: [], highlight: "knee" };
+const f3 = makeFig("f3", STAIRS, IBU, false, "-20 -60 360 240");
+(function drawStairs() {
+  const g = f3.svg.firstChild, p = document.createElementNS(NS, "path");
+  let d = "M-20 160 L60 160";
+  for (let i = 1; i <= 5; i++) d += ` L${60 + (i - 1) * 32} ${160 - i * 14} L${60 + i * 32} ${160 - i * 14}`;
+  d += " L340 90 L340 180 L-20 180Z";
+  p.setAttribute("d", d); p.setAttribute("fill", "#b9a58a"); p.setAttribute("stroke", "#8a7a64"); p.setAttribute("stroke-width", "2.5");
+  g.insertBefore(p, g.firstChild);
+  const rail = document.createElementNS(NS, "path");
+  rail.setAttribute("d", "M40 110 L230 30"); rail.setAttribute("stroke", "#7a6a55"); rail.setAttribute("stroke-width", "4"); rail.setAttribute("stroke-linecap", "round");
+  g.insertBefore(rail, p.nextSibling);
+})();
+function stairPose(t) {
+  // 3 langkah (1 dtk/langkah) mulai t=11.0, lalu berhenti & memegang lutut
+  const t0 = 11.0, x0 = 40, step = 1.05;
+  const k = clamp((t - t0) / step, 0, 3);
+  const i = Math.min(2, Math.floor(k)), u = k >= 3 ? 1 : k - i;
+  const e = ease(u), lift = Math.sin(Math.PI * u) * (k >= 3 ? 0 : 1);
+  const hip = [x0 + 32 * (i + e) + 18, 86 - 14 * (i + e)];
+  const lead = [10 + 50 * lift, -10 - 35 * lift, 100 + 25 * lift], trail = [-6 - 8 * lift, -6, 96];
+  let pose = { hip, torso: 9, n: i % 2 ? trail : lead, f: i % 2 ? lead : trail, arm: [12 - 20 * lift, 25] };
+  const pain = ease(clamp((t - (t0 + 3 * step + 0.1)) / 0.7));
+  if (pain > 0) {
+    pose = { hip: [hip[0], hip[1] + 4 * pain], torso: 9 + 30 * pain, n: [12 * pain + pose.n[0] * (1 - pain), pose.n[1] * (1 - pain), 96],
+      f: [pose.f[0] * (1 - pain), pose.f[1] * (1 - pain), 96], hold: [hip[0] + 12, hip[1] + 26] };
+  }
+  return { pose, pain };
+}
+
+// S7 & S9: latihan duduk "Luruskan Lutut"
+const f7 = makeFig("f7", EX["luruskan-lutut"], IBU, false, "10 -10 190 182");
+const f9a = makeFig("f9a", EX["luruskan-lutut"], IBU, false, "10 -10 190 182");
+const f9b = makeFig("f9b", EX["luruskan-lutut"], CUCU, false, "10 -10 190 182");
+[f7, f9a, f9b].forEach(f => f.svg.querySelectorAll(".fig-prop").forEach(p => p.style.stroke = "#a08a6c"));
+
+// ---------- Timeline ----------
+const scenes = SCENES.map(([id, a, b]) => ({ el: document.getElementById(id), a, b }));
+const items = [...document.querySelectorAll("[data-at]")].map(el => ({ el, at: +el.dataset.at, kind: el.classList }));
+
+function render(t) {
+  scenes.forEach((s, idx) => {
+    const fin = idx === 0 ? 1 : clamp((t - s.a) / 0.6);
+    const fout = idx === scenes.length - 1 ? 1 : clamp((s.b + 0.3 - t) / 0.6);
+    const op = Math.min(fin, fout);
+    s.el.style.opacity = op;
+    s.el.style.visibility = op > 0 ? "visible" : "hidden";
+    const bg = s.el.querySelector(".bg");
+    if (bg) bg.style.transform = `scale(${1 + 0.04 * clamp((t - s.a) / (s.b - s.a))})`;
+  });
+  items.forEach(({ el, at }) => {
+    const a = easeOut(clamp((t - at) / 0.55));
+    el.style.opacity = a;
+    const base = el.classList.contains("logo") || el.classList.contains("url") ? "translateX(-50%) " : "";
+    if (el.classList.contains("icon") || el.classList.contains("x")) el.style.transform = `scale(${0.4 + 0.6 * a})`;
+    else if (el.classList.contains("phone")) el.style.transform = `translateY(${(1 - a) * 300}px)`;
+    else el.style.transform = base + `translateY(${(1 - a) * 40}px)`;
+  });
+
+  // S1
+  const sun = document.getElementById("sun");
+  sun.style.left = "640px"; sun.style.top = `${1060 - 380 * ease(clamp(t / 5))}px`;
+  f1.setProgress(0.5 - 0.5 * Math.cos(2 * Math.PI * t / 1.1));
+  // S3
+  const sp = stairPose(t);
+  f3.render(sp.pose);
+  f3.hl.style.opacity = sp.pain * (0.35 + 0.25 * Math.sin(t * 8));
+  f3.hl.setAttribute("r", 9 + 3 * Math.sin(t * 8));
+  // S7, S9
+  const ex = EX["luruskan-lutut"], cyc = ex.up + 1.2 + ex.down + 0.5;
+  const pr = (tt) => repProgress(((tt % cyc) + cyc) % cyc, ex.up, 1.2, ex.down);
+  f7.setProgress(pr(t - 29.8)); f7.hl.style.opacity = 0;
+  f9a.setProgress(pr(t - 40.6)); f9b.setProgress(pr(t - 40.6)); f9a.hl.style.opacity = 0; f9b.hl.style.opacity = 0;
+  f1.hl.style.opacity = 0;
+  // S8: ganti layar HP
+  const sw = clamp((t - 38.6) / 0.6);
+  document.getElementById("ph2").style.opacity = sw;
+}
+window.render = render;
+window.DURATION = DURATION;
+render(0);
+</script>
+</body>
+</html>
