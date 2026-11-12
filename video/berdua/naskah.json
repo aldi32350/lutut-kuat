@@ -1,0 +1,20 @@
+{
+  "voices": {
+    "k": {"voice": "id-ID-ArdiNeural", "rate": "-12%", "pitch": "-14Hz"},
+    "n": {"voice": "id-ID-GadisNeural", "rate": "+2%", "pitch": "-10Hz"}
+  },
+  "gap": 0.4,
+  "sentences": [
+    {"id": "intro", "who": "n", "text": "Dulu, kami berdua cuma jadi penonton."},
+    {"id": "teras", "who": "k", "text": "Cucu ngajak main bola, saya duduk di teras."},
+    {"id": "kaku", "who": "n", "text": "Saya juga. Lutut rasanya kaku, mau berdiri saja pelan-pelan."},
+    {"id": "pasang", "who": "k", "text": "Lalu anak kami pasangkan Lutut Kuat di HP."},
+    {"id": "pagi", "who": "n", "text": "Sekarang tiap pagi kami latihan sebentar. Cukup sepuluh menit, sambil duduk di kursi."},
+    {"id": "fitur", "who": "k", "text": "Ada gambarnya, ada suara yang memandu, hitungannya jalan sendiri."},
+    {"id": "ikut", "who": "n", "text": "Kami tinggal ikut."},
+    {"id": "main1", "who": "k", "text": "Hari ini,"},
+    {"id": "main", "who": "n", "text": "kami ikut main!"},
+    {"id": "coba", "who": "k", "text": "Mau coba?"},
+    {"id": "cta", "who": "n", "text": "Gratis tiga hari, di lututkuat titik web titik id."}
+  ]
+}
