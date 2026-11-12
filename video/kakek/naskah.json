@@ -1,0 +1,15 @@
+{
+  "voice": "id-ID-ArdiNeural",
+  "rate": "-12%",
+  "pitch": "-14Hz",
+  "gap": 0.45,
+  "sentences": [
+    {"id": "intro", "text": "Cucu saya, Raka, tiap sore ngajak main bola."},
+    {"id": "dulu", "text": "Dulu saya cuma nonton dari teras. Lutut rasanya kaku, mau berdiri saja pelan-pelan."},
+    {"id": "pasang", "text": "Lalu anak saya pasangkan Lutut Kuat di HP saya."},
+    {"id": "pagi", "text": "Sekarang, tiap pagi saya latihan sebentar. Cukup sepuluh menit, sambil duduk di kursi."},
+    {"id": "fitur", "text": "Ada gambarnya, ada suara yang memandu, hitungannya jalan sendiri. Saya tinggal ikut."},
+    {"id": "main", "text": "Hari ini, saya ikut main."},
+    {"id": "cta", "text": "Mau coba? Gratis tiga hari, di lututkuat titik web titik id."}
+  ]
+}

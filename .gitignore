@@ -16,3 +16,6 @@ id_*
 video/*.mp4
 video/assets/musik.wav
 video/assets/preview.jpg
+video/kakek/*.mp4
+video/kakek/*.wav
+video/kakek/tmp/
