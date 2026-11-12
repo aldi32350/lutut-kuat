@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin Lutut Kuat</title>
+<style>
+  :root { --bg:#f6f4ee; --ink:#1b2a29; --mute:#4a5856; --line:#e4ded1; --p:#0f766e; --ok:#15803d; --warn:#b45309; --bad:#b42318; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.5 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 16px 16px 60px; }
+  h1 { font-size: 1.4rem; margin: 6px 0 2px; }
+  .muted { color: var(--mute); font-size: .9rem; }
+  .card { background: #fff; border-radius: 16px; padding: 14px 16px; margin: 12px 0; box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 14px rgba(0,0,0,.05); }
+  input, textarea { width: 100%; min-height: 50px; font: inherit; padding: 10px 12px; border: 2px solid var(--line); border-radius: 12px; }
+  input:focus { outline: none; border-color: var(--p); }
+  button, .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 46px; padding: 0 16px; border-radius: 12px;
+    border: 2px solid var(--line); background: #fff; font: inherit; font-weight: 700; color: var(--ink); cursor: pointer; text-decoration: none; }
+  .primary { background: var(--p); border-color: var(--p); color: #fff; }
+  .okb { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .badb { color: var(--bad); border-color: #f1c4bf; }
+  .wa { background: #1fa855; border-color: #1fa855; color: #fff; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat { background: #fff; border-radius: 14px; padding: 10px; text-align: center; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  .stat b { display: block; font-size: 1.35rem; }
+  .stat span { font-size: .8rem; color: var(--mute); }
+  .tabs { display: flex; gap: 6px; overflow-x: auto; margin: 14px 0 4px; }
+  .tabs button { white-space: nowrap; min-height: 40px; padding: 0 12px; font-size: .9rem; }
+  .tabs button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .ord { display: grid; grid-template-columns: 1fr 110px; gap: 12px; }
+  .ord h3 { margin: 0; font-size: 1.1rem; }
+  .ord .proof { width: 110px; height: 150px; object-fit: cover; border-radius: 10px; background: #eee; cursor: zoom-in; border: 1px solid var(--line); }
+  .noproof { width: 110px; height: 150px; border-radius: 10px; background: #f1eee6; display: grid; place-items: center; font-size: .8rem; color: var(--mute); text-align: center; padding: 6px; }
+  .badge { display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: .78rem; font-weight: 800; }
+  .b-menunggu { background: #fef3c7; color: var(--warn); } .b-aktif { background: #dcfce7; color: var(--ok); }
+  .b-ditolak { background: #fee2e2; color: var(--bad); } .b-baru { background: #e5e7eb; color: #374151; }
+  .mono { font-family: ui-monospace, Consolas, monospace; }
+  .lic { word-break: break-all; font-size: .78rem; background: #f7f5ef; border-radius: 8px; padding: 8px; margin-top: 8px; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.85); display: grid; place-items: center; padding: 12px; z-index: 9; }
+  .modal img { max-width: 100%; max-height: 92vh; border-radius: 10px; }
+  [hidden] { display: none !important; }
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px; font-weight: 700; }
+</style>
+</head>
+<body>
+<main>
+  <section id="login" hidden>
+    <h1>🔐 Admin Lutut Kuat</h1>
+    <p class="muted">Halaman khusus pemilik untuk memeriksa pembayaran.</p>
+    <div class="card">
+      <form id="lf">
+        <label for="pw"><b>Password admin</b></label>
+        <input id="pw" type="password" autocomplete="current-password" required>
+        <button class="primary" style="width:100%;margin-top:10px">Masuk</button>
+        <p id="lerr" class="muted" style="color:var(--bad)"></p>
+      </form>
+    </div>
+  </section>
+
+  <section id="app" hidden>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div><h1>Pembayaran Masuk</h1><div class="muted" id="upd"></div></div>
+      <button id="out">Keluar</button>
+    </div>
+    <div class="stats" style="margin-top:10px">
+      <div class="stat"><b id="s1">0</b><span>perlu dicek</span></div>
+      <div class="stat"><b id="s2">0</b><span>pembeli aktif</span></div>
+      <div class="stat"><b id="s3">Rp0</b><span>pemasukan</span></div>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div id="list"></div>
+
+    <div class="card">
+      <b>Buat kode manual</b>
+      <p class="muted">Untuk pembeli yang bayar di luar aplikasi. Masukkan kode perangkat dari HP pembeli (menu Pengaturan).</p>
+      <input id="mdev" class="mono" placeholder="XXXX-XXXX" maxlength="9">
+      <div class="row"><button id="mgen" class="primary">Buat kode</button></div>
+      <div id="mout"></div>
+    </div>
+  </section>
+</main>
+<div class="modal" id="modal" hidden><img id="mimg" alt="Bukti pembayaran"></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const APP_URL = location.origin + "/";
+let TOKEN = localStorage.getItem("lk_admin") || "", DATA = { orders: [], price: 49000 }, TAB = "menunggu";
+const TABS = [["menunggu", "⏳ Perlu dicek"], ["aktif", "✅ Aktif"], ["ditolak", "❌ Ditolak"], ["baru", "📝 Belum kirim bukti"], ["semua", "Semua"]];
+const rp = (n) => "Rp" + Number(n).toLocaleString("id-ID");
+const tgl = (t) => t ? new Date(t).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" }) : "-";
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(t._t); t._t = setTimeout(() => (t.hidden = true), 2200); }
+function el(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) { if (k === "class") e.className = v; else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v); }
+  kids.flat().forEach((k) => k != null && e.append(k.nodeType ? k : document.createTextNode(String(k))));
+  return e;
+}
+async function api(path, opts = {}) {
+  const r = await fetch(path, { ...opts, headers: { "Content-Type": "application/json", Authorization: "Bearer " + TOKEN, ...(opts.headers || {}) } });
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401) { logout(); throw new Error(j.error || "Silakan login lagi."); }
+  if (!r.ok) throw new Error(j.error || "Gagal");
+  return j;
+}
+function logout() { TOKEN = ""; localStorage.removeItem("lk_admin"); $("#app").hidden = true; $("#login").hidden = false; }
+
+$("#lf").addEventListener("submit", async (e) => {
+  e.preventDefault(); $("#lerr").textContent = "";
+  try {
+    const r = await fetch("/api/admin/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: $("#pw").value }) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error);
+    TOKEN = j.token; localStorage.setItem("lk_admin", TOKEN); $("#pw").value = ""; start();
+  } catch (err) { $("#lerr").textContent = err.message || "Gagal masuk"; }
+});
+$("#out").onclick = logout;
+
+function waLink(o, approved) {
+  const msg = approved
+    ? `Halo ${o.name}, terima kasih 🙏 Pembayaran Lutut Kuat sudah kami terima dan aplikasi Anda sudah AKTIF selamanya.\n\nSilakan buka ${APP_URL} — aplikasi akan aktif otomatis.\n\nJika belum aktif, buka menu Aktifkan lalu tempel kode ini:\n${o.license}`
+    : `Halo ${o.name}, terima kasih sudah mengirim bukti pembayaran Lutut Kuat. ${o.note ? "Catatan: " + o.note + ". " : ""}Mohon kirim ulang bukti yang sesuai lewat aplikasi ya 🙏`;
+  return `https://wa.me/${o.phone}?text=${encodeURIComponent(msg)}`;
+}
+
+function render() {
+  const os = DATA.orders, cnt = (s) => os.filter((o) => o.status === s).length;
+  $("#s1").textContent = cnt("menunggu"); $("#s2").textContent = cnt("aktif");
+  $("#s3").textContent = rp(os.filter((o) => o.status === "aktif").reduce((a, o) => a + (o.amount || DATA.price), 0));
+  $("#tabs").replaceChildren(...TABS.map(([k, l]) => el("button", { class: k === TAB ? "on" : "", onclick: () => { TAB = k; render(); } }, `${l} (${k === "semua" ? os.length : cnt(k)})`)));
+  const list = TAB === "semua" ? os : os.filter((o) => o.status === TAB);
+  if (!list.length) return $("#list").replaceChildren(el("div", { class: "card muted" }, "Belum ada data di sini."));
+  $("#list").replaceChildren(...list.map(card));
+  $("#upd").textContent = "Diperbarui " + new Date().toLocaleTimeString("id-ID");
+}
+
+function card(o) {
+  const proof = o.proof
+    ? el("img", { class: "proof", src: `/api/admin/proof/${o.id}?t=${encodeURIComponent(TOKEN)}&v=${o.proofAt}`, alt: "Bukti", onclick: (e) => { $("#mimg").src = e.target.src; $("#modal").hidden = false; } })
+    : el("div", { class: "noproof" }, "Belum kirim bukti");
+  const info = el("div", {},
+    el("h3", {}, o.name, " ", el("span", { class: "badge b-" + o.status }, o.status.toUpperCase())),
+    el("div", {}, "📱 ", el("a", { href: `https://wa.me/${o.phone}`, target: "_blank", rel: "noopener" }, "+" + o.phone)),
+    el("div", { class: "muted" }, "Perangkat: ", el("span", { class: "mono" }, o.deviceId), " · Pesanan ", el("span", { class: "mono" }, o.id)),
+    el("div", { class: "muted" }, "Metode: ", o.method || "-", " · ", rp(o.amount || DATA.price)),
+    el("div", { class: "muted" }, "Bukti dikirim: ", tgl(o.proofAt)),
+    o.note ? el("div", { class: "muted", style: "color:var(--bad)" }, "Catatan: ", o.note) : null,
+  );
+  const row = el("div", { class: "row" });
+  if (o.status === "menunggu" || o.status === "ditolak") row.append(el("button", { class: "okb", onclick: () => act(o, "approve") }, "✅ Setujui"));
+  if (o.status === "menunggu") row.append(el("button", { class: "badb", onclick: () => act(o, "reject") }, "❌ Tolak"));
+  if (o.status === "aktif") row.append(el("a", { class: "btn wa", href: waLink(o, true), target: "_blank", rel: "noopener" }, "💬 Kirim kode via WA"));
+  if (o.status === "ditolak") row.append(el("a", { class: "btn wa", href: waLink(o, false), target: "_blank", rel: "noopener" }, "💬 Kabari via WA"));
+  if (o.status === "aktif") row.append(el("button", { onclick: () => copy(o.license) }, "📋 Salin kode"));
+  row.append(el("button", { class: "badb", onclick: () => act(o, "delete") }, "🗑 Hapus"));
+  return el("div", { class: "card" }, el("div", { class: "ord" }, el("div", {}, info, row), proof));
+}
+
+async function act(o, what) {
+  let note = "";
+  if (what === "approve" && !confirm(`Setujui pembayaran ${o.name}? Pastikan uang sudah masuk ke rekening/QRIS Anda.`)) return;
+  if (what === "reject") { note = prompt("Alasan ditolak (akan dilihat pembeli):", "Bukti pembayaran belum sesuai / dana belum masuk."); if (note === null) return; }
+  if (what === "delete" && !confirm(`Hapus data ${o.name}? Data & foto bukti akan dihapus permanen.`)) return;
+  try {
+    const r = await api(`/api/admin/orders/${o.id}/${what}`, { method: "POST", body: JSON.stringify({ note }) });
+    await load();
+    if (what === "approve") { toast("Disetujui ✅ Aplikasi pembeli akan aktif otomatis"); if (confirm("Kirim kabar & kode ke WhatsApp pembeli sekarang?")) window.open(waLink(r, true), "_blank"); }
+    else toast(what === "reject" ? "Ditolak" : "Dihapus");
+  } catch (e) { alert(e.message); }
+}
+async function copy(t) { try { await navigator.clipboard.writeText(t); toast("Kode disalin"); } catch (e) { prompt("Salin kode ini:", t); } }
+
+$("#mdev").addEventListener("input", (e) => { const c = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8); e.target.value = c.length > 4 ? c.slice(0, 4) + "-" + c.slice(4) : c; });
+$("#mgen").onclick = async () => {
+  try {
+    const r = await api("/api/admin/license", { method: "POST", body: JSON.stringify({ deviceId: $("#mdev").value }) });
+    $("#mout").replaceChildren(el("div", { class: "lic mono" }, r.license), el("div", { class: "row" }, el("button", { onclick: () => copy(r.license) }, "📋 Salin kode")));
+  } catch (e) { alert(e.message); }
+};
+$("#modal").onclick = () => ($("#modal").hidden = true);
+
+async function load() { DATA = await api("/api/admin/orders"); render(); }
+let timer;
+function start() { $("#login").hidden = true; $("#app").hidden = false; load().catch((e) => alert(e.message)); clearInterval(timer); timer = setInterval(() => !document.hidden && load().catch(() => {}), 30000); }
+TOKEN ? start() : logout();
+</script>
+</body>
+</html>

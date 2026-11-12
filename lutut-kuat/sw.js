@@ -1,11 +1,10 @@
 // Service worker: menyimpan file agar aplikasi bisa dipakai offline.
 // Naikkan nomor versi setiap kali Anda mengubah file aplikasi.
-const CACHE = "lutut-kuat-v6";
+const CACHE = "lutut-kuat-v7";
 const FILES = [
   "./",
   "./index.html",
   "./css/style.css",
-  "./js/secret.js",
   "./js/config.js",
   "./js/license.js",
   "./js/data.js",
@@ -38,7 +37,8 @@ self.addEventListener("activate", (e) => {
 
 // Jaringan dulu (agar update cepat terlihat), cadangan dari cache saat offline.
 self.addEventListener("fetch", (e) => {
-  if (e.request.method !== "GET" || new URL(e.request.url).origin !== location.origin) return;
+  const u = new URL(e.request.url);
+  if (e.request.method !== "GET" || u.origin !== location.origin || u.pathname.startsWith("/api/") || u.pathname.startsWith("/admin")) return;
   e.respondWith(
     fetch(e.request)
       .then((res) => {

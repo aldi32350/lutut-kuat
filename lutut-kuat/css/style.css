@@ -406,6 +406,33 @@ body.in-player .app { padding-bottom: calc(16px + env(safe-area-inset-bottom)); 
 }
 .player-fig .figure { max-height: 40vh; margin: 0 auto; }
 
+/* ---------- Alur bayar baru ---------- */
+.pay-steps { list-style: none; padding: 0; margin: 1rem 0 .4rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; counter-reset: st; }
+.pay-steps li { counter-increment: st; text-align: center; font-size: .78rem; font-weight: 700; color: var(--muted); line-height: 1.25; }
+.pay-steps li::before { content: counter(st); display: grid; place-items: center; width: 34px; height: 34px; margin: 0 auto 4px; border-radius: 50%;
+  background: #e7e2d7; color: var(--ink); font-weight: 800; }
+.pay-steps li.now { color: var(--primary-dark); }
+.pay-steps li.now::before { background: var(--primary); color: #fff; }
+.pay-steps li.done::before { content: "✓"; background: var(--primary-soft); color: var(--primary-dark); }
+.methods { display: grid; gap: .5rem; }
+.method { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 2px; padding: .8rem 1rem; min-height: 64px;
+  border-radius: 14px; border: 2px solid var(--line); background: #fff; font: inherit; color: var(--ink); cursor: pointer; }
+.method b { font-size: 1rem; }
+.method span { font-size: .85rem; color: var(--muted); font-family: ui-monospace, Consolas, monospace; }
+.method.on { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 2px var(--primary) inset; }
+.buyer-card { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.upload { display: grid; place-items: center; gap: .5rem; min-height: 120px; padding: 1rem; margin: .6rem 0; border: 2px dashed #c9c1b1;
+  border-radius: 14px; background: #faf8f3; cursor: pointer; text-align: center; font-weight: 700; color: var(--primary-dark); }
+.upload input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.upload img { max-width: 100%; max-height: 320px; border-radius: 10px; }
+.wait-card { text-align: center; }
+.wait-card h2 { margin: .3rem 0; }
+.wait-icon { font-size: 3rem; animation: pulse-w 2s ease-in-out infinite; }
+@keyframes pulse-w { 50% { transform: scale(1.1); } }
+.manual summary { font-weight: 700; cursor: pointer; color: var(--primary-dark); }
+.manual textarea { width: 100%; margin-top: .6rem; padding: .6rem; border: 2px solid var(--line); border-radius: 12px; font-size: .85rem; }
+.field input[type="tel"] { letter-spacing: .02em; }
+
 /* =====================================================
    KETERBACAAN USIA 40+
    Teks kecil tidak lebih kecil dari ±17px, kontras tinggi,

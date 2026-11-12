@@ -25,3 +25,10 @@ video/nenek/tmp/
 video/berdua/*.mp4
 video/berdua/*.wav
 video/berdua/tmp/
+
+# Server: kunci rahasia, data pembeli, password admin
+server/keys/
+server/data/
+server/.env*
+server/data-test/
+admin-password.txt

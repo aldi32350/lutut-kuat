@@ -51,8 +51,12 @@
     if (!state.lastSeen || now > state.lastSeen) (state.lastSeen = now), (ch = true);
     if (ch) save();
   }
+  let LICENSED = false;
+  async function checkLicense() {
+    try { LICENSED = !!(state.license && (await LIC.verifyLicense(state.deviceId, state.license, CFG.licensePublicKey))); } catch (e) { LICENSED = false; }
+  }
   function lic() {
-    if (state.license && LIC.verify(state.deviceId, state.license, CFG.licenseSecret)) return { active: true };
+    if (LICENSED) return { active: true };
     const now = Date.now();
     const start = state.trialStart || now;
     // jam HP dimundurkan lebih dari 1 jam → anggap masa coba habis
@@ -716,7 +720,7 @@
     $("#reset").addEventListener("click", () => {
       if (!confirm("Hapus semua riwayat dan pengaturan? Tindakan ini tidak bisa dibatalkan.")) return;
       // status lisensi & masa coba tetap disimpan
-      const keep = { deviceId: state.deviceId, trialStart: state.trialStart, lastSeen: state.lastSeen, license: state.license, accepted: state.accepted };
+      const keep = { deviceId: state.deviceId, trialStart: state.trialStart, lastSeen: state.lastSeen, license: state.license, accepted: state.accepted, buyer: state.buyer, order: state.order };
       state = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), keep);
       save();
       applyTextSize();
@@ -746,24 +750,81 @@
     }
   }
 
+  // ---------- API server pembayaran ----------
+  const API = (CFG.apiBase || "") + "/api";
+  async function apiCall(path, opts = {}) {
+    let r;
+    try {
+      r = await fetch(API + path, { ...opts, headers: { "Content-Type": "application/json" }, cache: "no-store" });
+    } catch (e) {
+      throw new Error("Tidak bisa terhubung. Periksa koneksi internet Anda, lalu coba lagi.");
+    }
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || "Server sedang sibuk. Coba lagi sebentar.");
+    return j;
+  }
+  async function activateWith(license) {
+    const ok = await LIC.verifyLicense(state.deviceId, license, CFG.licensePublicKey);
+    if (!ok) return false;
+    state.license = license.trim();
+    LICENSED = true;
+    save();
+    return true;
+  }
+  // cek status pesanan yang menunggu (dipanggil saat buka aplikasi & di halaman bayar)
+  async function refreshOrder() {
+    if (!state.order || !state.order.id) return null;
+    const o = await apiCall(`/orders/${state.order.id}?device=${encodeURIComponent(state.deviceId)}`);
+    state.order = { id: o.id, status: o.status, note: o.note || "" };
+    save();
+    if (o.status === "aktif" && o.license) await activateWith(o.license);
+    return o;
+  }
+  function compressImage(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const max = 1400, sc = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        let q = 0.82, d = c.toDataURL("image/jpeg", q);
+        while (d.length > 2.6e6 && q > 0.4) { q -= 0.12; d = c.toDataURL("image/jpeg", q); }
+        resolve(d);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Foto tidak bisa dibaca. Coba pilih foto lain (format JPG/PNG).")); };
+      img.src = url;
+    });
+  }
+  let payPoll = null;
+
   function renderPayment(locked) {
     lockedView = locked;
     nav.hidden = locked;
+    clearInterval(payPoll);
     const pay = CFG.payment;
     const L = lic();
-    const waText = `Halo, saya sudah membayar aktivasi ${CFG.appName} ${rupiah(CFG.price)}.\nKode perangkat: ${state.deviceId}\nBerikut bukti pembayarannya:`;
     if (L.active) {
       view.innerHTML = `
-        ${back("#/")}
+        ${locked ? "" : back("#/")}
         <section class="pay-done">
           <div class="big-check">✅</div>
           <h1>Aplikasi sudah aktif</h1>
-          <p>Terima kasih! ${esc(CFG.appName)} bisa dipakai selamanya di perangkat ini.</p>
+          <p>Terima kasih${state.buyer && state.buyer.name ? ", " + esc(state.buyer.name) : ""}! ${esc(CFG.appName)} bisa dipakai selamanya di perangkat ini.</p>
           <a class="btn primary block" href="#/">Ke Beranda</a>
         </section>`;
       return;
     }
-    view.innerHTML = `
+    const buyer = state.buyer || { name: state.name || "", phone: "" };
+    const order = state.order || null;
+    const stage = !order ? "data" : order.status; // data | baru | menunggu | ditolak
+    const methods = [{ id: "QRIS", label: "QRIS", sub: "GoPay, OVO, DANA, ShopeePay, m-banking" }, ...pay.banks.map((b) => ({ id: b.bank, label: "Transfer " + b.bank, sub: b.number }))];
+    const method = methods.find((m) => m.id === state.payMethod) || null;
+    const waAdmin = (txt) => CFG.whatsapp ? `https://wa.me/${encodeURIComponent(CFG.whatsapp)}?text=${encodeURIComponent(txt)}` : "";
+
+    const hero = `
       ${locked ? "" : back("#/")}
       <section class="pay-hero">
         <img src="img/beranda.jpg" alt="">
@@ -773,97 +834,167 @@
           <p>Lanjutkan latihan lutut setiap hari, tanpa batas.</p>
         </div>
       </section>
-
       <div class="card price-card">
         <div class="price">${rupiah(CFG.price)}</div>
         <div class="muted">sekali bayar · berlaku selamanya</div>
-        <ul class="plain benefits">
-          <li>✔️ Semua program & 15 gerakan</li>
-          <li>✔️ Panduan gambar, suara & hitungan</li>
-          <li>✔️ Riwayat & catatan perkembangan</li>
-          <li>✔️ Bisa dipakai tanpa internet</li>
-        </ul>
       </div>
+      <ol class="pay-steps">
+        <li class="${stage === "data" ? "now" : "done"}">Data diri</li>
+        <li class="${stage === "baru" || stage === "ditolak" ? "now" : stage === "menunggu" ? "done" : ""}">Bayar & kirim bukti</li>
+        <li class="${stage === "menunggu" ? "now" : ""}">Diaktifkan admin</li>
+      </ol>`;
 
-      <h2 class="sec"><span class="step-no">1</span> Lakukan pembayaran</h2>
-      <div class="card">
-        <h3>Scan QRIS</h3>
-        <p class="muted small">Bisa dibayar dengan GoPay, OVO, DANA, ShopeePay, LinkAja, atau m-banking.</p>
-        <button class="qris-box" id="qris-zoom" aria-label="Perbesar QRIS"><img src="${esc(pay.qris)}" alt="Kode QRIS pembayaran"></button>
-        <p class="center small">a.n. <b>${esc(pay.accountName)}</b> · Nominal <b>${rupiah(CFG.price)}</b></p>
-        <a class="btn block" href="${esc(pay.qris)}" download="QRIS-${esc(CFG.appName.replace(/\s+/g, "-"))}.png">⬇️ Simpan gambar QRIS</a>
-        <p class="muted small center">Membuka dari HP yang sama? Simpan gambarnya, lalu pilih “Upload QR / dari galeri” di aplikasi pembayaran.</p>
-      </div>
-      <div class="card">
-        <h3>Atau transfer bank</h3>
-        <div class="banks">
-          ${pay.banks
-            .map(
-              (b) => `
+    let body = "";
+    if (stage === "data") {
+      body = `
+        <h2 class="sec"><span class="step-no">1</span> Isi data diri</h2>
+        <div class="card">
+          <label class="field"><span>Nama lengkap</span>
+            <input id="b-name" type="text" maxlength="60" autocomplete="name" value="${esc(buyer.name)}" placeholder="Contoh: Sri Wahyuni"></label>
+          <label class="field"><span>Nomor HP / WhatsApp</span>
+            <input id="b-phone" type="tel" inputmode="tel" maxlength="16" autocomplete="tel" value="${esc(buyer.phone)}" placeholder="Contoh: 0812 3456 7890"></label>
+          <p class="muted small">Nomor ini dipakai admin untuk mengabari Anda setelah pembayaran dicek.</p>
+          <button class="btn primary block" id="b-next">Lanjut ke pembayaran ›</button>
+          <div id="b-msg" role="status"></div>
+        </div>`;
+    } else if (stage === "menunggu") {
+      body = `
+        <div class="card wait-card">
+          <div class="wait-icon">⏳</div>
+          <h2>Bukti pembayaran sedang dicek</h2>
+          <p>Terima kasih, <b>${esc(buyer.name)}</b>! Admin akan memeriksa pembayaran Anda. Aplikasi akan <b>aktif otomatis</b> setelah disetujui. Anda boleh menutup halaman ini.</p>
+          <p class="muted small">No. pesanan: <b class="mono">${esc(order.id)}</b> · HP: ${esc(buyer.phone)}</p>
+          <button class="btn primary block" id="o-refresh">🔄 Cek status sekarang</button>
+          ${CFG.whatsapp ? `<a class="btn wa block" target="_blank" rel="noopener" href="${waAdmin(`Halo admin, saya ${buyer.name} sudah mengirim bukti pembayaran ${CFG.appName}. No. pesanan: ${order.id}`)}">💬 Tanya admin via WhatsApp</a>` : ""}
+          <div id="o-msg" role="status"></div>
+        </div>`;
+    } else {
+      body = `
+        ${stage === "ditolak" ? `<div class="card warn"><b>❌ Pembayaran belum bisa disetujui.</b><p>${esc(order.note || "Bukti pembayaran belum sesuai.")}</p><p class="small">Silakan periksa lalu kirim ulang bukti pembayaran di bawah.</p></div>` : ""}
+        <div class="card buyer-card">
+          <div><span class="muted small">Atas nama</span><br><b>${esc(buyer.name)}</b> · ${esc(buyer.phone)}</div>
+          <button class="link-btn" id="b-edit">Ubah</button>
+        </div>
+        <h2 class="sec"><span class="step-no">2</span> Pilih metode pembayaran</h2>
+        <div class="methods">
+          ${methods.map((m) => `<button class="method ${method && method.id === m.id ? "on" : ""}" data-m="${esc(m.id)}"><b>${esc(m.label)}</b><span>${esc(m.sub)}</span></button>`).join("")}
+        </div>
+        ${method ? (method.id === "QRIS" ? `
+          <div class="card">
+            <h3>Scan QRIS</h3>
+            <button class="qris-box" id="qris-zoom" aria-label="Perbesar QRIS"><img src="${esc(pay.qris)}" alt="Kode QRIS pembayaran"></button>
+            <p class="center small">a.n. <b>${esc(pay.accountName)}</b> · Nominal <b>${rupiah(CFG.price)}</b></p>
+            <a class="btn block" href="${esc(pay.qris)}" download="QRIS-${esc(CFG.appName.replace(/\s+/g, "-"))}.png">⬇️ Simpan gambar QRIS</a>
+            <p class="muted small center">Membuka dari HP yang sama? Simpan gambarnya, lalu pilih “Upload QR / dari galeri” di aplikasi pembayaran.</p>
+          </div>` : `
+          <div class="card">
+            <h3>Transfer ${esc(method.id)}</h3>
             <div class="bank">
-              <div><div class="bank-name">${esc(b.bank)}</div><div class="bank-no mono">${esc(b.number)}</div></div>
-              <button class="btn small-btn" data-copy="${esc(b.number)}">Salin</button>
-            </div>`
-            )
-            .join("")}
-        </div>
-        <p class="small">Atas nama: <b>${esc(pay.accountName)}</b></p>
-        <p class="small">Nominal: <b>${rupiah(CFG.price)}</b> <button class="link-btn" data-copy="${CFG.price}">salin</button></p>
-      </div>
+              <div><div class="bank-name">No. rekening</div><div class="bank-no mono">${esc(method.sub)}</div></div>
+              <button class="btn small-btn" data-copy="${esc(method.sub)}">Salin</button>
+            </div>
+            <p class="small">Atas nama: <b>${esc(pay.accountName)}</b></p>
+            <p class="small">Nominal: <b>${rupiah(CFG.price)}</b> <button class="link-btn" data-copy="${CFG.price}">salin</button></p>
+          </div>`) + `
+        <h2 class="sec"><span class="step-no">3</span> Kirim bukti pembayaran</h2>
+        <div class="card">
+          <p class="small">Foto atau screenshot bukti transfer yang menampilkan <b>nominal</b> dan <b>tanggal</b>.</p>
+          <label class="upload" for="p-file">
+            <input id="p-file" type="file" accept="image/*">
+            <img id="p-prev" alt="" hidden>
+            <span id="p-hint">📷 Pilih foto bukti pembayaran</span>
+          </label>
+          <button class="btn primary block" id="p-send" disabled>Kirim bukti pembayaran</button>
+          <div id="p-msg" role="status"></div>
+        </div>` : `<p class="muted small center">Pilih salah satu metode di atas.</p>`}`;
+    }
 
-      <h2 class="sec"><span class="step-no">2</span> Kirim bukti pembayaran</h2>
-      <div class="card">
-        <p>Kirim <b>bukti transfer</b> beserta <b>kode perangkat</b> di bawah ini${CFG.whatsapp ? " lewat WhatsApp" : " ke penjual"}.</p>
-        <div class="device-code">
-          <span class="muted small">Kode perangkat Anda</span>
-          <b class="mono">${esc(state.deviceId)}</b>
-          <button class="btn small-btn" data-copy="${esc(state.deviceId)}">Salin</button>
-        </div>
-        ${
-          CFG.whatsapp
-            ? `<a class="btn wa block" target="_blank" rel="noopener" href="https://wa.me/${encodeURIComponent(CFG.whatsapp)}?text=${encodeURIComponent(waText)}">💬 Kirim bukti via WhatsApp</a>`
-            : ""
-        }
-        <p class="muted small">Kode aktivasi akan dikirim setelah pembayaran dicek.</p>
-      </div>
-
-      <h2 class="sec"><span class="step-no">3</span> Masukkan kode aktivasi</h2>
-      <div class="card">
-        <label class="field"><span>Kode aktivasi</span>
-          <input id="act-code" class="mono code-input" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" maxlength="12" placeholder="XXXX-XXXX">
-        </label>
-        <button class="btn primary block" id="act-btn">Aktifkan</button>
+    view.innerHTML = hero + body + `
+      <details class="card manual">
+        <summary>Sudah punya kode aktivasi dari admin?</summary>
+        <textarea id="act-code" class="mono" rows="3" placeholder="Tempel kode aktivasi di sini"></textarea>
+        <button class="btn block" id="act-btn">Aktifkan dengan kode</button>
         <div id="act-msg" role="status"></div>
-      </div>
-
+        <p class="muted small">Kode perangkat Anda: <b class="mono">${esc(state.deviceId)}</b></p>
+      </details>
       <div id="qris-modal" class="modal" hidden>
         <div class="modal-inner"><img src="${esc(pay.qris)}" alt="Kode QRIS pembayaran"><p class="center">Ketuk di mana saja untuk menutup</p></div>
       </div>`;
 
+    const rerender = () => renderPayment(lockedView);
+    const busy = (btn, on, label) => { btn.disabled = on; if (label) btn.textContent = label; };
+    const showErr = (id, e) => ($(id).innerHTML = `<p class="danger-text">${esc(e.message || e)}</p>`);
+    const celebrate = () => { beep(1046, 0.15); setTimeout(() => beep(1318, 0.25), 180); location.hash = "#/bayar"; route(); };
+
     $$("[data-copy]", view).forEach((b) => b.addEventListener("click", () => copyText(b.dataset.copy, b)));
     const modal = $("#qris-modal");
-    $("#qris-zoom").addEventListener("click", () => (modal.hidden = false));
+    if ($("#qris-zoom")) $("#qris-zoom").addEventListener("click", () => (modal.hidden = false));
     modal.addEventListener("click", () => (modal.hidden = true));
-    const input = $("#act-code");
-    input.addEventListener("input", () => {
-      const c = LIC.clean(input.value).slice(0, 8);
-      input.value = c.length > 4 ? c.slice(0, 4) + "-" + c.slice(4) : c;
-    });
-    $("#act-btn").addEventListener("click", () => {
-      const msg = $("#act-msg");
-      if (LIC.verify(state.deviceId, input.value, CFG.licenseSecret)) {
-        state.license = LIC.clean(input.value);
-        save();
-        beep(1046, 0.15);
-        setTimeout(() => beep(1318, 0.25), 180);
-        msg.innerHTML = `<p class="ok">🎉 Berhasil! Aplikasi sudah aktif selamanya.</p>`;
-        setTimeout(() => {
-          location.hash = "#/";
-          route();
-        }, 1400);
-      } else {
-        msg.innerHTML = `<p class="danger-text">Kode tidak cocok. Periksa lagi kodenya, atau hubungi penjual dengan menyertakan kode perangkat Anda.</p>`;
-      }
+
+    if (stage === "data") {
+      $("#b-next").addEventListener("click", async (e) => {
+        const name = $("#b-name").value.trim(), phone = $("#b-phone").value.trim();
+        if (name.length < 2) return showErr("#b-msg", "Nama lengkap wajib diisi.");
+        if (phone.replace(/\D/g, "").length < 9) return showErr("#b-msg", "Nomor HP wajib diisi dengan benar.");
+        busy(e.target, true, "Menyimpan…");
+        try {
+          const o = await apiCall("/orders", { method: "POST", body: JSON.stringify({ name, phone, deviceId: state.deviceId }) });
+          state.buyer = { name, phone };
+          state.order = { id: o.id, status: o.status, note: o.note || "" };
+          save();
+          if (o.status === "aktif" && o.license && (await activateWith(o.license))) return celebrate();
+          rerender();
+          window.scrollTo(0, 0);
+        } catch (err) { busy(e.target, false, "Lanjut ke pembayaran ›"); showErr("#b-msg", err); }
+      });
+    }
+    if ($("#b-edit")) $("#b-edit").addEventListener("click", () => { state.order = null; save(); rerender(); });
+    $$("[data-m]", view).forEach((b) => b.addEventListener("click", () => { state.payMethod = b.dataset.m; save(); rerender(); }));
+
+    if ($("#p-file")) {
+      let dataUrl = null;
+      $("#p-file").addEventListener("change", async (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        $("#p-msg").innerHTML = "";
+        try {
+          dataUrl = await compressImage(f);
+          const pv = $("#p-prev"); pv.src = dataUrl; pv.hidden = false;
+          $("#p-hint").textContent = "Ganti foto";
+          $("#p-send").disabled = false;
+        } catch (err) { showErr("#p-msg", err); }
+      });
+      $("#p-send").addEventListener("click", async (e) => {
+        if (!dataUrl) return;
+        busy(e.target, true, "Mengirim…");
+        try {
+          const o = await apiCall(`/orders/${state.order.id}/proof`, { method: "POST", body: JSON.stringify({ deviceId: state.deviceId, method: state.payMethod, image: dataUrl }) });
+          state.order = { id: o.id, status: o.status, note: "" };
+          save();
+          rerender();
+          window.scrollTo(0, 0);
+        } catch (err) { busy(e.target, false, "Kirim bukti pembayaran"); showErr("#p-msg", err); }
+      });
+    }
+
+    if (stage === "menunggu" || stage === "ditolak" || stage === "baru") {
+      const check = async (manual) => {
+        try {
+          const before = state.order.status;
+          await refreshOrder();
+          if (LICENSED) return celebrate();
+          if (state.order.status !== before) return rerender();
+          if (manual) $("#o-msg").innerHTML = `<p class="muted small center">Belum disetujui. Kami akan cek lagi otomatis.</p>`;
+        } catch (err) { if (manual) showErr("#o-msg", err); }
+      };
+      if ($("#o-refresh")) $("#o-refresh").addEventListener("click", () => check(true));
+      if (stage === "menunggu") payPoll = setInterval(() => !document.hidden && check(false), 10000);
+    }
+
+    $("#act-btn").addEventListener("click", async () => {
+      const code = $("#act-code").value.trim();
+      if (code && (await activateWith(code))) return celebrate();
+      $("#act-msg").innerHTML = `<p class="danger-text">Kode tidak cocok untuk perangkat ini. Pastikan kode disalin utuh, atau hubungi admin.</p>`;
     });
   }
 
@@ -1140,7 +1271,15 @@
   document.title = CFG.appName;
   applyTextSize();
   Voice.init();
-  route();
+  (async () => {
+    ensureLicenseState();
+    await checkLicense();
+    route();
+    // pesanan yang menunggu: cek apakah sudah disetujui admin
+    if (!LICENSED && state.order && state.order.status === "menunggu") {
+      try { await refreshOrder(); if (LICENSED || state.order.status !== "menunggu") route(); } catch (e) {}
+    }
+  })();
 
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));

@@ -18,26 +18,31 @@ Ikonnya ada di folder `icons/`.
 
 Setiap kali mengubah file, naikkan versi `CACHE` di `sw.js` (misalnya `lutut-kuat-v2`) supaya pengguna lama mendapat versi terbaru.
 
-## Lisensi: coba 3 hari, lalu bayar Rp49.000
-- Pengguna **wajib mengisi nama panggilan** (minimal 2 huruf) dan mencentang persetujuan sebelum bisa memakai aplikasi.
-- Masa coba **3 hari** dimulai saat pengguna menekan "Mulai" pertama kali. Beranda menampilkan **hitung mundur** (hari, jam, menit, detik) yang berubah menjadi merah ketika sisa waktunya kurang dari 1 hari.
-- Begitu masa coba habis, aplikasi langsung **terkunci total**, termasuk saat sedang dibuka atau sedang latihan. Menu bawah hilang, dan yang bisa dibuka hanya **halaman pembayaran**. Halaman ini berisi QRIS, rekening BSI, BRI, BCA, dan Mandiri a.n. Muhamad Aldi Wiyono, serta kode perangkat pembeli.
-- Pembeli mengirim **bukti bayar dan kode perangkat** kepada Anda.
+## Lisensi, pembayaran & admin
+- Pengguna **wajib mengisi nama panggilan** dan mencentang persetujuan sebelum memakai aplikasi.
+- Masa coba **3 hari** sejak pertama kali menekan "Mulai". Beranda menampilkan **hitung mundur**; setelah habis, aplikasi **terkunci total** dan hanya halaman pembayaran yang bisa dibuka.
 
-### Cara mengaktifkan pembeli
-1. Cek dulu bahwa uangnya sudah masuk.
-2. Buka file **`pembuat-kode-aktivasi.html`** dengan klik dua kali. File ini ada di folder `Project Aldi`, di luar folder aplikasi.
-3. Masukkan kode perangkat pembeli, lalu tekan **Buat kode aktivasi**.
-4. Tekan **Salin pesan balasan** dan kirim pesannya ke pembeli.
-5. Pembeli memasukkan kode itu di langkah 3 halaman pembayaran. Setelah itu aplikasi aktif selamanya.
+### Alur pembeli
+1. Isi **nama lengkap** dan **nomor HP/WhatsApp**.
+2. Pilih **metode pembayaran**: QRIS, atau transfer BSI/BRI/BCA/Mandiri (a.n. Muhamad Aldi Wiyono).
+3. Upload **foto/screenshot bukti bayar**.
+4. Status berubah menjadi "sedang dicek". Setelah Anda menyetujuinya, aplikasi pembeli **aktif otomatis** (dicek tiap 10 detik selama halaman terbuka, dan setiap kali aplikasi dibuka).
 
-Satu kode aktivasi **hanya berlaku di satu HP**, jadi kode tidak bisa dibagikan ke orang lain.
+### Menu admin (khusus Anda)
+- Alamat: **https://lututkuat.web.id/admin**. Password ada di file `admin-password.txt` (di folder `Project Aldi`). Simpan password di tempat aman lalu hapus file itu.
+- Tab **Perlu dicek**: berisi nama, nomor HP (bisa diklik ke WA), metode, dan **foto bukti** (ketuk untuk memperbesar).
+- **✅ Setujui**: tekan setelah Anda memastikan uangnya sudah masuk ke rekening atau QRIS. Aplikasi pembeli langsung aktif, dan muncul tawaran untuk mengirim kabar plus kode lewat WhatsApp.
+- **❌ Tolak**: tulis alasannya. Pembeli akan melihat alasan itu dan bisa mengirim ulang bukti.
+- **Buat kode manual**: untuk pembeli yang membayar di luar aplikasi. Masukkan kode perangkat dari HP pembeli (ada di menu Pengaturan).
+- Kode aktivasi adalah **tanda tangan digital** dari server untuk satu HP, jadi tidak bisa dipalsukan atau dipakai di HP lain.
 
-### Penting
-- **Jangan upload `pembuat-kode-aktivasi.html`** ke hosting. Upload hanya isi folder `lutut-kuat`.
-- Isi `whatsapp` di `js/config.js` (contoh: `"6281234567890"`). Setelah diisi, muncul tombol "Kirim bukti via WhatsApp" yang otomatis berisi pesan beserta kode perangkat pembeli.
-- Untuk mengganti harga, masa coba, nomor rekening, atau QRIS, edit `js/config.js` dan file `img/qris.png`.
-- **Keterbatasan:** aplikasi ini tidak punya server, jadi kuncinya bekerja di dalam HP. Orang yang paham teknis masih bisa mengakalinya, misalnya dengan menghapus data browser untuk mengulang masa coba. Untuk penjualan ke pengguna umum dan lansia, cara ini sudah memadai. Kalau nanti penjualannya besar, sistemnya bisa ditingkatkan dengan server login.
+### Data di server (VPS)
+- Folder `/opt/lutut-kuat-api` (container `lk-api`): `data/orders.json` berisi data pembeli, `data/proofs/` berisi foto bukti, dan `data/keys/` berisi kunci tanda tangan. **Jangan hapus folder `data/keys`**, karena tanpa kunci itu semua kode aktivasi tidak bisa dibuat lagi.
+- Data pembeli (nama, nomor HP, foto bukti) adalah data pribadi. Simpan seperlunya, dan hapus data lama lewat tombol **🗑 Hapus** di admin bila sudah tidak diperlukan.
+- Kalau ingin mengganti password admin, minta dibuatkan ulang isi `ADMIN_HASH` di `/opt/lutut-kuat-api/.env`, lalu jalankan `docker compose up -d` di folder itu.
+
+### Keterbatasan
+Masa coba tetap disimpan di HP, jadi pengguna yang paham teknis masih bisa mengulangnya dengan menghapus data browser. Kode aktivasi sendiri tidak bisa dipalsukan.
 
 ## Foto
 Semua foto di folder `img/` berasal dari Pexels (https://www.pexels.com/license/), yang gratis dan boleh dipakai untuk tujuan komersial tanpa atribusi.

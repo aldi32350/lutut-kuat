@@ -8,13 +8,15 @@ window.APP_CONFIG = {
   whatsapp: "6285122142971",
   // Nama penjual / brand yang tampil di halaman Tentang
   author: "Tim Lutut Kuat",
-  version: "1.1.0",
+  version: "1.2.0",
 
   // ---------- LISENSI & PEMBAYARAN ----------
   price: 49000, // harga aktivasi (Rupiah), sekali bayar
   trialDays: 3, // masa coba gratis sejak pertama kali dibuka
-  // Kunci rahasia pembuat kode aktivasi diambil dari js/secret.js (tidak di-upload ke GitHub).
-  licenseSecret: window.APP_SECRET || "",
+  // Kunci PUBLIK untuk memeriksa kode aktivasi dari server (aman dibagikan).
+  licensePublicKey: "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEvNFHSwSgzoIFQdOk9tUn+EqnM6perEKeVZZUf81nKDkY7gYtUa6K2NOAeshBANSP0XQxJZ/mN8TagG99Id4Y/Q==",
+  // Alamat server pembayaran. Kosong = domain yang sama dengan aplikasi.
+  apiBase: "",
   payment: {
     accountName: "Muhamad Aldi Wiyono",
     qris: "img/qris.png",

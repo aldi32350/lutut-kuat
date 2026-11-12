@@ -13,16 +13,15 @@ Aplikasi web (PWA) latihan lutut di rumah untuk lansia. Fitur utamanya:
 - `lutut-kuat/PANDUAN.md`: panduan pemilik, berisi cara mengganti brand, lisensi, dan cara menjual.
 - `deploy.sh`: skrip untuk meng-upload aplikasi ke VPS.
 
+## Server pembayaran & admin
+- `server/app/server.js` adalah API pembayaran (pesanan, bukti bayar, dan persetujuan admin). Ditulis dengan Node.js tanpa dependensi.
+- `server/app/admin.html` adalah halaman admin di `/admin`.
+- `server/docker-compose.yml` dijalankan di VPS (`/opt/lutut-kuat-api`).
+- Kunci tanda tangan lisensi (`server/keys/`), file `.env`, dan data pembeli **tidak** disimpan di repo.
+
 ## Menjalankan di komputer
-1. Salin `lutut-kuat/js/secret.example.js` menjadi `lutut-kuat/js/secret.js`, lalu isi dengan kunci acak milik Anda.
-2. Jalankan perintah ini:
+1. Buat kunci tanda tangan dan password admin untuk uji coba. Lihat `server/app/server.js` untuk variabel yang dibutuhkan: `ADMIN_HASH`, `LICENSE_KEY`, dan `DATA_DIR`.
+2. Jalankan perintah ini, lalu buka http://localhost:3000:
    ```
-   python -m http.server 5173 --directory lutut-kuat
+   STATIC_DIR=lutut-kuat DATA_DIR=server/data-test LICENSE_KEY=server/keys/license-private.pem node server/app/server.js
    ```
-3. Buka http://localhost:5173
-
-## Yang tidak disimpan di repo ini
-- `lutut-kuat/js/secret.js`: kunci rahasia untuk membuat kode aktivasi.
-- `pembuat-kode-aktivasi.html`: alat penjual untuk membuat kode aktivasi.
-
-Kedua file ini hanya ada di komputer pemilik. Simpan cadangannya di tempat yang aman.

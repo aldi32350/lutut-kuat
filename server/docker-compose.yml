@@ -1,0 +1,23 @@
+# Server pembayaran Lutut Kuat. Di VPS: /opt/lutut-kuat-api
+# Ikut jaringan "laporan_default" agar Caddy bisa meneruskan /api dan /admin ke sini.
+services:
+  lk-api:
+    image: node:22-alpine
+    container_name: lk-api
+    restart: unless-stopped
+    user: "1000:1000"
+    working_dir: /app
+    command: ["node", "/app/server.js"]
+    env_file: .env
+    environment:
+      DATA_DIR: /data
+      LICENSE_KEY: /data/keys/license-private.pem
+      PORT: "3000"
+    volumes:
+      - ./app:/app:ro
+      - ./data:/data
+    networks: [laporan_default]
+
+networks:
+  laporan_default:
+    external: true

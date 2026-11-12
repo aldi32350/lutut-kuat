@@ -1,33 +1,11 @@
 // =====================================================
-//  LISENSI: kode perangkat & kode aktivasi
-//  Kode aktivasi = turunan dari (kode perangkat + kunci rahasia),
-//  sehingga satu kode hanya berlaku di satu HP.
-//  Dipakai juga oleh "pembuat-kode-aktivasi.html".
+//  LISENSI
+//  Kode perangkat dibuat acak di HP. Kode aktivasi = tanda tangan digital (ECDSA P-256)
+//  dari server untuk kode perangkat itu. Aplikasi hanya menyimpan KUNCI PUBLIK,
+//  jadi kode aktivasi tidak bisa dipalsukan walau isi aplikasi dibaca orang.
 // =====================================================
 (function () {
   const ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // tanpa huruf/angka yang mirip (I, O, 0, 1)
-
-  function cyrb53(str, seed) {
-    let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
-    for (let i = 0; i < str.length; i++) {
-      const ch = str.charCodeAt(i);
-      h1 = Math.imul(h1 ^ ch, 2654435761);
-      h2 = Math.imul(h2 ^ ch, 1597334677);
-    }
-    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-    return 4294967296 * (2097151 & h2) + (h1 >>> 0);
-  }
-
-  function toAlpha(n, len) {
-    let s = "";
-    for (let i = 0; i < len; i++) {
-      s += ALPHA[n % 32];
-      n = Math.floor(n / 32);
-    }
-    return s;
-  }
-
   const clean = (s) => String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   const fmt = (s) => s.slice(0, 4) + "-" + s.slice(4, 8);
 
@@ -37,16 +15,24 @@
     return fmt(Array.from(a, (x) => ALPHA[x % 32]).join(""));
   }
 
-  function activationCode(deviceId, secret) {
-    const id = clean(deviceId);
-    const a = cyrb53(id + "|" + secret, 7);
-    const b = cyrb53(secret + "|" + id, 13);
-    return fmt(toAlpha(a, 4) + toAlpha(b, 4));
+  const b64ToBytes = (b64) => {
+    const s = atob(b64.replace(/-/g, "+").replace(/_/g, "/").replace(/\s+/g, "") + "===".slice((b64.length + 3) % 4));
+    return Uint8Array.from(s, (c) => c.charCodeAt(0));
+  };
+
+  let keyPromise = null;
+  async function verifyLicense(deviceId, license, publicKeyB64) {
+    if (!license || !publicKeyB64 || !window.crypto || !crypto.subtle) return false;
+    try {
+      keyPromise = keyPromise || crypto.subtle.importKey("spki", b64ToBytes(publicKeyB64), { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"]);
+      const key = await keyPromise;
+      const sig = b64ToBytes(String(license).trim());
+      if (sig.length !== 64) return false;
+      return await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, key, sig, new TextEncoder().encode("LK1|" + clean(deviceId)));
+    } catch (e) {
+      return false;
+    }
   }
 
-  function verify(deviceId, code, secret) {
-    return clean(code).length === 8 && clean(code) === clean(activationCode(deviceId, secret));
-  }
-
-  window.LK_LICENSE = { newDeviceId, activationCode, verify, clean, fmt };
+  window.LK_LICENSE = { newDeviceId, verifyLicense, clean, fmt };
 })();
