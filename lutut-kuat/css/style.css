@@ -2,7 +2,7 @@
   --bg: #f6f4ee;
   --card: #ffffff;
   --ink: #1b2a29;
-  --muted: #5a6866;
+  --muted: #3f4d4b;
   --line: #e4ded1;
   --primary: #0f766e;
   --primary-dark: #0b5952;
@@ -19,9 +19,10 @@
   --shadow: 0 1px 2px rgba(20, 40, 38, 0.06), 0 4px 14px rgba(20, 40, 38, 0.06);
 }
 html { font-size: 19px; -webkit-text-size-adjust: 100%; }
-html[data-size="normal"] { font-size: 16px; }
-html[data-size="besar"] { font-size: 19px; }
-html[data-size="sangat"] { font-size: 22px; }
+/* Ukuran dasar dibuat besar untuk pembaca usia 40+ */
+html[data-size="normal"] { font-size: 18px; }
+html[data-size="besar"] { font-size: 20px; }
+html[data-size="sangat"] { font-size: 23px; }
 
 * { box-sizing: border-box; }
 body {
@@ -404,3 +405,41 @@ body.in-player .app { padding-bottom: calc(16px + env(safe-area-inset-bottom)); 
   .pl-num { font-size: 2.4rem; }
 }
 .player-fig .figure { max-height: 40vh; margin: 0 auto; }
+
+/* =====================================================
+   KETERBACAAN USIA 40+
+   Teks kecil tidak lebih kecil dari ±17px, kontras tinggi,
+   jarak baris lega, huruf sedikit lebih tebal.
+   ===================================================== */
+body { line-height: 1.6; letter-spacing: 0.01em; -webkit-font-smoothing: antialiased; }
+p, li { line-height: 1.65; }
+b, strong { font-weight: 800; }
+.muted { color: var(--muted); }
+.small,
+.prog-meta,
+.install p,
+.hint,
+.hello-text p,
+.pay-hero-text p,
+.trial-cta,
+.trial-head,
+.bank-name,
+.steps.compact { font-size: 0.9rem; }
+.prog-desc, .ex-card .ex-name { font-size: 0.95rem; }
+.ex-card .ex-name { line-height: 1.35; }
+.chip, .pill, .pill-lock, .small-btn, .seg button, .pain button, .cal-d { font-size: 0.88rem; }
+.pill-lock { font-size: 0.88rem !important; }
+.day, .stat span, .cd span, .cal-h { font-size: 0.8rem; color: var(--ink); font-weight: 700; }
+.day b { width: 38px; height: 38px; font-size: 0.9rem; }
+.prog-name { font-size: 1.1rem; line-height: 1.3; }
+.ex-name { line-height: 1.35; }
+.steps li { margin: 0.6rem 0; }
+.card { padding: 1.1rem 1.15rem; }
+.card h3 { font-size: 1.08rem; }
+.pl-cue { font-size: 1.2rem; }
+.hint.bad { color: var(--danger); }
+/* Menu bawah: ukuran tetap agar 4 menu muat di layar HP */
+.nav a { font-size: 15px; font-weight: 700; color: #3f4d4b; }
+.nav a span { font-size: 26px; }
+/* Teks di atas foto: bayangan agar tetap jelas */
+.hello-text, .pay-hero-text { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45); }

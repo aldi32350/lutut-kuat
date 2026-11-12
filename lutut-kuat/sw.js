@@ -1,6 +1,6 @@
 // Service worker: menyimpan file agar aplikasi bisa dipakai offline.
 // Naikkan nomor versi setiap kali Anda mengubah file aplikasi.
-const CACHE = "lutut-kuat-v5";
+const CACHE = "lutut-kuat-v6";
 const FILES = [
   "./",
   "./index.html",
