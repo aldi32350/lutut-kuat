@@ -9,6 +9,10 @@ export type ApiErrorCode =
   | "CONSENT"
   | "MODERATION"
   | "RATE_LIMIT"
+  | "AUTH"
+  | "NO_CREDIT"
+  | "PRO_ONLY"
+  | "NOT_FOUND"
   | "INTERNAL";
 
 /** Pesan ramah (Bahasa Indonesia) yang ditampilkan ke user. */
@@ -26,6 +30,10 @@ export const PESAN_ERROR: Record<ApiErrorCode, string> = {
   CONFIG: "Layanan AI belum dikonfigurasi dengan benar. Hubungi admin.",
   TIMEOUT: "AI terlalu lama merespons. Coba lagi sebentar lagi.",
   PROVIDER: "Terjadi gangguan di layanan AI. Coba lagi sebentar lagi.",
+  AUTH: "Masuk dulu ya untuk mulai membuat foto.",
+  NO_CREDIT: "Kredit kamu habis. Isi ulang kredit untuk lanjut membuat foto.",
+  PRO_ONLY: "Fitur ini khusus paket Pro. Upgrade untuk membukanya.",
+  NOT_FOUND: "Data tidak ditemukan.",
   INTERNAL: "Ups, ada yang salah di server kami. Coba lagi ya.",
 };
 

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AlertCircle, Lock, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import type { KategoriId, PublicPreset } from "@/lib/presets";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,8 @@ import { ResultPanel, type GenerateResponse } from "./ResultPanel";
 interface Props {
   presets: PublicPreset[];
   kategori: { id: KategoriId; nama: string; ikon: string }[];
+  user: { credits: number; isPro: boolean } | null;
+  initialPresetId?: string;
 }
 
 type Status = "idle" | "loading" | "done" | "error";
@@ -25,13 +28,16 @@ function defaultInputs(p: PublicPreset) {
   return v;
 }
 
-export function Studio({ presets, kategori }: Props) {
+export function Studio({ presets, kategori, user, initialPresetId }: Props) {
+  const router = useRouter();
+  const first = presets.find((p) => p.id === initialPresetId) ?? presets[0];
   const [photo, setPhoto] = useState<UploadedPhoto | null>(null);
   const [photo2, setPhoto2] = useState<UploadedPhoto | null>(null);
   const [kat, setKat] = useState<KategoriId | "semua">("semua");
   const [query, setQuery] = useState("");
-  const [presetId, setPresetId] = useState<string | null>(presets[0]?.id ?? null);
-  const [inputs, setInputs] = useState<Record<string, string>>(presets[0] ? defaultInputs(presets[0]) : {});
+  const [presetId, setPresetId] = useState<string | null>(first?.id ?? null);
+  const [inputs, setInputs] = useState<Record<string, string>>(first ? defaultInputs(first) : {});
+  const [credits, setCredits] = useState(user?.credits ?? 0);
   const [consent, setConsent] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [result, setResult] = useState<GenerateResponse | null>(null);
@@ -42,7 +48,31 @@ export function Studio({ presets, kategori }: Props) {
   const list = useMemo(() => filterPresets(presets, kat, query), [presets, kat, query]);
 
   const butuh2 = preset?.jumlahFotoInput === 2;
-  const siap = !!photo && !!preset && (!butuh2 || !!photo2) && (!preset.butuhPersetujuan || consent);
+  const terkunci = !!preset?.premium && !user?.isPro;
+  const kurangInput = preset?.inputTambahan?.find((f) => f.wajib && f.tipe !== "image" && !(inputs[f.nama] ?? "").trim());
+  const siap =
+    !!user && !terkunci && credits > 0 && !!photo && !!preset && (!butuh2 || !!photo2) && (!preset.butuhPersetujuan || consent) && !kurangInput;
+
+  // Teks tombol utama menjelaskan apa yang masih kurang
+  const labelTombol = !user
+    ? "Masuk untuk generate"
+    : terkunci
+      ? "Khusus Pro — upgrade"
+      : credits < 1
+        ? "Kredit habis — isi ulang"
+        : !photo || (butuh2 && !photo2)
+          ? "Upload foto dulu"
+          : preset?.butuhPersetujuan && !consent
+            ? "Centang persetujuan dulu"
+            : kurangInput
+              ? `Isi “${kurangInput.label}”`
+              : `Generate · 1 kredit`;
+
+  function tombolUtama() {
+    if (!user) return router.push(`/login?next=${encodeURIComponent(`/studio?fitur=${presetId ?? ""}`)}`);
+    if (terkunci || credits < 1) return router.push("/akun#paket");
+    generate();
+  }
   const step = !photo ? 1 : status === "idle" ? 2 : 3;
 
   useEffect(() => {
@@ -76,8 +106,10 @@ export function Studio({ presets, kategori }: Props) {
         throw new Error(data?.error?.message ?? "Ups, ada yang salah. Coba lagi ya.");
       }
       setResult(data as GenerateResponse);
+      setCredits(data.creditsLeft);
       setStatus("done");
-      toast.success("Foto berhasil dibuat!");
+      toast.success("Foto berhasil dibuat!", { description: `Sisa kredit: ${data.creditsLeft}` });
+      router.refresh(); // perbarui angka kredit di navbar
     } catch (e) {
       const msg =
         e instanceof TypeError ? "Koneksi internet terputus. Periksa sinyal lalu coba lagi." : (e as Error).message;
@@ -127,11 +159,12 @@ export function Studio({ presets, kategori }: Props) {
               <Button
                 size="lg"
                 className="h-12 w-full rounded-xl text-base lg:w-auto lg:px-10"
-                disabled={!siap || status === "loading"}
-                onClick={generate}
+                disabled={status === "loading" || (!siap && !!user && !terkunci && credits > 0)}
+                onClick={tombolUtama}
+                data-testid="generate-btn"
               >
-                <Sparkles className="mr-2 h-5 w-5" />
-                {status === "loading" ? "Sedang membuat…" : !photo ? "Upload foto dulu" : "Generate"}
+                {terkunci ? <Lock className="mr-2 h-5 w-5" /> : <Sparkles className="mr-2 h-5 w-5" />}
+                {status === "loading" ? "Sedang membuat…" : labelTombol}
               </Button>
             </div>
           </section>
@@ -154,7 +187,7 @@ export function Studio({ presets, kategori }: Props) {
               </div>
             )}
             {status === "done" && result && photo && (
-              <ResultPanel result={result} beforeUrl={photo.previewUrl} onRegenerate={generate} busy={false} />
+              <ResultPanel key={result.id} result={result} beforeUrl={photo.previewUrl} onRegenerate={generate} busy={false} />
             )}
           </section>
         </div>
